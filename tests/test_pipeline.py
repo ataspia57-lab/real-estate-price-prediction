@@ -140,3 +140,49 @@ def test_history_logged(client):
 def test_ui_renders(client):
     r = client.get("/")
     assert r.status_code == 200 and b"Estimate price" in r.data
+
+
+# ---------------------------------------------------------------- admin panel
+def _login(client, pw="admin123"):
+    return client.post("/admin/login", data={"password": pw})
+
+
+def test_admin_requires_login(client):
+    r = client.get("/admin/")
+    assert r.status_code == 302 and "/admin/login" in r.headers["Location"]
+
+
+def test_admin_wrong_password(client):
+    r = _login(client, "nope")
+    assert r.status_code == 200 and b"Wrong password" in r.data
+
+
+def test_admin_tabs_render(client):
+    client.post("/api/predict", json={"location": _loc(client), "total_sqft": 1250, "bhk": 3, "bath": 2})
+    assert _login(client).status_code == 302
+    for tab in ["overview", "predictions", "model", "data"]:
+        r = client.get(f"/admin/?tab={tab}")
+        assert r.status_code == 200, tab
+    assert b"Total estimates" in client.get("/admin/?tab=overview").data
+
+
+def test_admin_export_and_clear(client):
+    client.post("/api/predict", json={"location": _loc(client), "total_sqft": 1250, "bhk": 3, "bath": 2})
+    _login(client)
+    csv_text = client.get("/admin/export.csv").data.decode()
+    assert csv_text.startswith("id,created_at") and csv_text.count("\n") == 2
+    # clear needs CSRF token + typed confirmation
+    with client.session_transaction() as s:
+        token = s.get("csrf") or "x"
+        s["csrf"] = token
+    client.post("/admin/clear", data={"csrf": token, "confirm": "nope"})
+    assert len(client.get("/api/history").get_json()["items"]) == 1
+    client.post("/admin/clear", data={"csrf": token, "confirm": "DELETE"})
+    assert client.get("/api/history").get_json()["items"] == []
+
+
+def test_admin_retrain_rejects_bad_csrf(client):
+    _login(client)
+    r = client.post("/admin/retrain", data={"csrf": "wrong"})
+    assert r.status_code == 302
+    assert client.get("/admin/retrain/status").get_json()["running"] is False

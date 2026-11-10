@@ -104,10 +104,12 @@ def create_app(model=None, meta=None, database_url: str | None = None) -> Flask:
 
     @app.get("/")
     def index():
+        model, meta = app.config["MODEL"], app.config["META"]
         return render_template("index.html", meta=meta)
 
     @app.get("/api/health")
     def health():
+        model, meta = app.config["MODEL"], app.config["META"]
         best = next(r for r in meta["results"] if r["model"] == meta["best_model"])
         return jsonify(status="ok", model=meta["best_model"], trained_at=meta["trained_at"],
                        test_r2=best["test_r2"], mae_pct=best["mae_pct_of_mean"],
@@ -115,15 +117,18 @@ def create_app(model=None, meta=None, database_url: str | None = None) -> Flask:
 
     @app.get("/api/locations")
     def locations():
+        model, meta = app.config["MODEL"], app.config["META"]
         return jsonify(locations=meta["locations"])
 
     @app.get("/api/model-info")
     def model_info():
+        model, meta = app.config["MODEL"], app.config["META"]
         return jsonify(best_model=meta["best_model"], results=meta["results"],
                        cleaning=meta["cleaning"], bounds=meta["bounds"])
 
     @app.post("/api/predict")
     def predict():
+        model, meta = app.config["MODEL"], app.config["META"]
         t0 = time.perf_counter()
         try:
             clean = validate(request.get_json(silent=True), meta)
@@ -151,6 +156,9 @@ def create_app(model=None, meta=None, database_url: str | None = None) -> Flask:
     @app.get("/api/history")
     def history():
         return jsonify(items=db.recent(app.config["DB_URL"], 20))
+
+    from .admin import register_admin
+    register_admin(app)
 
     return app
 

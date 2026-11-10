@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · PropValue</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1l7 7-7 7-7-7z' fill='%232f6f62'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+<body class="admin">
+{% set best = (meta.results | selectattr('model', 'equalto', meta.best_model) | first) %}
+<aside class="side">
+  <a class="brand" href="/"><span class="mark" aria-hidden="true">◆</span> PropValue <small>Admin</small></a>
+  <nav aria-label="Admin sections">
+    {% for key, label in [('overview','Overview'),('predictions','Predictions'),('model','Model'),('data','Dataset')] %}
+      <a href="?tab={{ key }}" {% if tab == key %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <div class="side-foot">
+    <a href="/" class="ghost">View public site ↗</a>
+    <form method="post" action="{{ url_for('admin.logout') }}"><button class="ghost" type="submit">Sign out</button></form>
+  </div>
+</aside>
+
+<main class="main">
+  {% if default_password %}
+    <p class="banner warn">You're using the demo password. Set the <code>ADMIN_PASSWORD</code> environment variable before deploying.</p>
+  {% endif %}
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<p class="banner {{ 'warn' if cat == 'error' else 'ok' }}" role="status">{{ m }}</p>{% endfor %}
+  {% endwith %}
+
+  {% if tab == 'overview' %}
+  <header class="page-head">
+    <div><h1>Overview</h1><p class="muted">Live usage of the price estimator.</p></div>
+    <span class="pill {{ 'good' if meta.gates.r2_passed and meta.gates.mae_passed else 'bad' }}">
+      {{ meta.best_model }} · R² {{ '%.3f'|format(best.test_r2) }}</span>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><p>Total estimates</p><strong>{{ '{:,}'.format(stats.total) }}</strong><span>{{ stats.today }} today</span></div>
+    <div class="kpi"><p>Average estimate</p><strong>{{ stats.avg_price|bdt_short }}</strong><span>across all requests</span></div>
+    <div class="kpi"><p>Avg response</p><strong>{{ '%.1f'|format(stats.avg_ms) }} ms</strong><span>max {{ '%.1f'|format(stats.max_ms) }} ms · target 500 ms</span></div>
+    <div class="kpi"><p>Model error</p><strong>{{ best.mae_pct_of_mean }}%</strong><span>MAE of mean price · gate &lt; 10%</span></div>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Estimates per day</h2>
+      {% if stats.by_day %}
+        {% set peak = stats.by_day | map(attribute='count') | max %}
+        <div class="bars" role="img" aria-label="Estimates per day, last {{ stats.by_day|length }} days">
+          {% for d in stats.by_day %}
+            <div class="bar"><span style="height: {{ (d.count / peak * 100)|round(1) }}%" title="{{ d.count }}"></span>
+              <em>{{ d.count }}</em><small>{{ d.day[5:] }}</small></div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="muted">No estimates yet.</p>{% endif %}
+    </section>
+    <section class="card">
+      <h2>Most searched areas</h2>
+      {% if stats.top_locations %}
+        {% set top = stats.top_locations[0].count %}
+        <ul class="hbars">
+          {% for l in stats.top_locations %}
+            <li><span class="lbl">{{ l.location }}</span>
+              <span class="track"><span style="width: {{ (l.count / top * 100)|round(1) }}%"></span></span>
+              <span class="num">{{ l.count }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="muted">No estimates yet.</p>{% endif %}
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Requests by bedroom count</h2>
+    <div class="chips">
+      {% for b in stats.by_bhk %}<span class="chip"><b>{{ b.bhk }} bed</b> {{ b.count }}</span>{% else %}<span class="muted">No estimates yet.</span>{% endfor %}
+    </div>
+  </section>
+
+  {% elif tab == 'predictions' %}
+  <header class="page-head">
+    <div><h1>Predictions</h1><p class="muted">{{ '{:,}'.format(total_rows) }} logged estimate{{ '' if total_rows == 1 else 's' }}{% if location %} in {{ location }}{% endif %}.</p></div>
+    <div class="actions">
+      <form method="get" class="filter">
+        <input type="hidden" name="tab" value="predictions">
+        <label class="sr-only" for="f-loc">Filter by location</label>
+        <select id="f-loc" name="location" onchange="this.form.submit()">
+          <option value="">All locations</option>
+          {% for l in meta.locations %}<option {% if l == location %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </form>
+      <a class="btn" href="{{ url_for('admin.export_csv') }}">Export CSV</a>
+    </div>
+  </header>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Time (UTC)</th><th>Location</th><th>Size</th><th>Bed</th><th>Bath</th><th>Estimate</th><th>Model</th><th>ms</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.id }}</td><td>{{ r.created_at[:16].replace('T', ' ') }}</td><td>{{ r.location }}</td>
+          <td>{{ '{:,}'.format(r.total_sqft|int) }}</td><td>{{ r.bhk }}</td><td>{{ r.bath if r.bath is not none else '–' }}</td>
+          <td><b>৳ {{ '{:,}'.format(r.price_bdt|int) }}</b></td><td>{{ r.model }}</td><td>{{ r.latency_ms }}</td></tr>
+      {% else %}
+        <tr><td colspan="9" class="muted">No estimates logged yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <nav class="pager" aria-label="Pages">
+    {% if page > 1 %}<a class="btn" href="?tab=predictions&page={{ page-1 }}{% if location %}&location={{ location|urlencode }}{% endif %}">← Newer</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="btn" href="?tab=predictions&page={{ page+1 }}{% if location %}&location={{ location|urlencode }}{% endif %}">Older →</a>{% endif %}
+  </nav>
+  {% endif %}
+  <details class="danger">
+    <summary>Clear prediction log</summary>
+    <form method="post" action="{{ url_for('admin.clear_log') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <label for="confirm">This deletes every logged estimate. Type <b>DELETE</b> to confirm.</label>
+      <div class="inline"><input id="confirm" name="confirm" autocomplete="off"><button class="btn danger-btn" type="submit">Clear log</button></div>
+    </form>
+  </details>
+
+  {% elif tab == 'model' %}
+  <header class="page-head">
+    <div><h1>Model</h1><p class="muted">Trained {{ meta.trained_at[:16].replace('T', ' ') }} UTC on <code>{{ meta.data_file }}</code>.</p></div>
+    <form method="post" action="{{ url_for('admin.retrain') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="btn primary-btn" type="submit" {% if retrain.running %}disabled{% endif %}>
+        {{ 'Retraining…' if retrain.running else 'Retrain model' }}</button>
+    </form>
+  </header>
+  {% if retrain.started %}
+    <p class="banner {{ 'ok' if retrain.ok else ('warn' if retrain.ok == false else '') }}" id="retrain-status" data-running="{{ retrain.running|lower }}">
+      {{ retrain.message }} <span class="muted">(started {{ retrain.started }}{% if retrain.finished %}, finished {{ retrain.finished }}{% endif %})</span></p>
+  {% endif %}
+
+  <section class="kpis">
+    <div class="kpi"><p>Deployed</p><strong class="sm">{{ meta.best_model }}</strong><span>best of {{ meta.results|length }} models</span></div>
+    <div class="kpi"><p>Test R²</p><strong>{{ '%.3f'|format(best.test_r2) }}</strong>
+      <span class="{{ 'good-t' if meta.gates.r2_passed else 'bad-t' }}">{{ '✓ passes' if meta.gates.r2_passed else '✗ fails' }} ≥ {{ meta.gates.r2_min }}</span></div>
+    <div class="kpi"><p>MAE</p><strong>{{ best.mae_pct_of_mean }}%</strong>
+      <span class="{{ 'good-t' if meta.gates.mae_passed else 'bad-t' }}">{{ '✓ passes' if meta.gates.mae_passed else '✗ fails' }} &lt; {{ meta.gates.mae_pct_max }}%</span></div>
+    <div class="kpi"><p>Clean rows</p><strong>{{ '{:,}'.format(meta.cleaning.after_iqr) }}</strong><span>of {{ '{:,}'.format(meta.cleaning.raw_rows) }} raw · {{ meta.cleaning.rows_removed }} removed</span></div>
+  </section>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Model</th><th>Test R²</th><th>CV R²</th><th>MAE (BDT)</th><th>MAE %</th><th>Best params</th><th>Train time</th></tr></thead>
+      <tbody>
+      {% for r in meta.results|sort(attribute='test_r2', reverse=True) %}
+        <tr class="{{ 'best' if r.model == meta.best_model }}">
+          <td>{{ r.model }}{% if r.model == meta.best_model %} <span class="tag">deployed</span>{% endif %}</td>
+          <td>{{ '%.4f'|format(r.test_r2) }}</td><td>{{ '%.4f'|format(r.cv_r2) }}</td>
+          <td>{{ '{:,}'.format(r.test_mae_bdt) }}</td><td>{{ r.mae_pct_of_mean }}%</td>
+          <td class="params">{% for k, v in r.best_params.items() %}<code>{{ k }}={{ v }}</code> {% endfor %}</td>
+          <td>{{ r.train_seconds }} s</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <section class="card"><h2>Input limits</h2>
+      <dl class="kv">
+        <dt>Size</dt><dd>{{ '{:,.0f}'.format(meta.bounds.total_sqft[0]) }} – {{ '{:,.0f}'.format(meta.bounds.total_sqft[1]) }} sqft</dd>
+        <dt>Bedrooms</dt><dd>{{ meta.bounds.bhk[0] }} – {{ meta.bounds.bhk[1] }}</dd>
+        <dt>Bathrooms</dt><dd>{{ meta.bounds.bath[0] }} – {{ meta.bounds.bath[1] }}</dd>
+        <dt>Min sqft per bedroom</dt><dd>{{ meta.bounds.sqft_per_bhk_min }}</dd>
+        <dt>Locations</dt><dd>{{ meta.locations|length }} (incl. Other)</dd>
+      </dl>
+    </section>
+    <section class="card"><h2>Cleaning report</h2>
+      <dl class="kv">
+        <dt>Raw rows</dt><dd>{{ '{:,}'.format(meta.cleaning.raw_rows) }}</dd>
+        <dt>After basic cleaning</dt><dd>{{ '{:,}'.format(meta.cleaning.after_basic_clean) }}</dd>
+        <dt>After IQR filter</dt><dd>{{ '{:,}'.format(meta.cleaning.after_iqr) }}</dd>
+        <dt>Named areas kept</dt><dd>{{ meta.cleaning.locations_kept }}</dd>
+      </dl>
+    </section>
+  </div>
+  <div class="figs">
+    <figure><img src="/figures/price_per_sqft_by_location.png" alt="Median price per square foot by location" loading="lazy"><figcaption>Median price per sqft by area</figcaption></figure>
+    <figure><img src="/figures/outliers_before_after.png" alt="Price per square foot before and after the IQR filter" loading="lazy"><figcaption>Outliers before and after the IQR filter</figcaption></figure>
+    <figure><img src="/figures/price_distribution.png" alt="Distribution of cleaned prices" loading="lazy"><figcaption>Price distribution</figcaption></figure>
+    <figure><img src="/figures/correlation.png" alt="Feature correlation heatmap" loading="lazy"><figcaption>Feature correlation</figcaption></figure>
+  </div>
+
+  {% elif tab == 'data' %}
+  <header class="page-head"><div><h1>Dataset</h1><p class="muted">The training file the model learns from.</p></div></header>
+  {% if dataset %}
+  <section class="kpis">
+    <div class="kpi"><p>File</p><strong class="sm"><code>{{ dataset.file }}</code></strong><span>updated {{ dataset.modified }}</span></div>
+    <div class="kpi"><p>Rows</p><strong>{{ '{:,}'.format(dataset.rows) }}</strong><span>before cleaning</span></div>
+    <div class="kpi"><p>Locations</p><strong>{{ dataset.locations }}</strong><span>{{ meta.cleaning.locations_kept }} kept, rest → Other</span></div>
+    <div class="kpi"><p>Missing values</p><strong>{{ dataset.missing.values()|sum }}</strong>
+      <span>{% for c, n in dataset.missing.items() %}{{ c }}: {{ n }}{% if not loop.last %} · {% endif %}{% else %}none{% endfor %}</span></div>
+  </section>
+  <section class="card">
+    <h2>Listings per location</h2>
+    {% set top = dataset.per_location[0].count %}
+    <ul class="hbars cols">
+      {% for l in dataset.per_location %}
+        <li class="{{ 'rare' if l.count < 10 }}"><span class="lbl">{{ l.location }}</span>
+          <span class="track"><span style="width: {{ (l.count / top * 100)|round(1) }}%"></span></span>
+          <span class="num">{{ l.count }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="muted small">Areas with fewer than 10 listings are grouped as “Other” during training. To use a real dataset, replace <code>data/raw/{{ dataset.file }}</code>, then press <b>Retrain model</b>.</p>
+  </section>
+  {% else %}
+    <p class="banner warn">No dataset found at <code>data/raw/house_data.csv</code>.</p>
+  {% endif %}
+  {% endif %}
+</main>
+
+<script>
+  // Refresh the Model tab while a retrain is running.
+  const s = document.getElementById("retrain-status");
+  if (s && s.dataset.running === "true") {
+    const poll = async () => {
+      try {
+        const r = await (await fetch("{{ url_for('admin.retrain_status') }}")).json();
+        if (!r.running) return location.reload();
+      } catch {}
+      setTimeout(poll, 4000);
+    };
+    setTimeout(poll, 4000);
+  }
+</script>
+</body>
+</html>

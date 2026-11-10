@@ -70,7 +70,7 @@ def main() -> None:
                         f"<script>\n{js}\n</script>")
     for fig in (ROOT / "reports" / "figures").glob("*.png"):
         html = html.replace(f'src="/figures/{fig.name}"', f'src="{data_uri(fig)}"')
-    html = html.replace('href="/"', 'href="#"')
+    html = html.replace('href="/"', 'href="#"').replace(' <a href="/admin/">Admin</a>', '')
 
     out = ROOT / "dist" / "index.html"
     out.parent.mkdir(exist_ok=True)

@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-11-10T17:24:56+00:00",
+  "trained_at": "2026-11-10T17:57:45+00:00",
   "data_file": "house_data.csv",
   "currency": "BDT",
   "best_model": "Gradient Boosting",
@@ -55,7 +55,7 @@
         "min_samples_leaf": 3,
         "n_estimators": 200
       },
-      "train_seconds": 117.9
+      "train_seconds": 120.0
     },
     {
       "model": "Gradient Boosting",
@@ -68,7 +68,7 @@
         "max_depth": 3,
         "n_estimators": 300
       },
-      "train_seconds": 20.2
+      "train_seconds": 20.4
     }
   ],
   "cleaning": {
