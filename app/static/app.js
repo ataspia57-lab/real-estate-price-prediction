@@ -107,14 +107,23 @@
     e.preventDefault();
     if (!validate()) return;
     btn.disabled = true; btn.textContent = "Estimating…";
+    const payload = {
+      location: chosen, total_sqft: Number(sqft.value),
+      bhk: Number($("#bhk").value), bath: Number($("#bath").value),
+    };
     try {
+      // Static/offline build (single HTML page) supplies window.localApi instead of the Flask server.
+      if (window.localApi) {
+        const out = window.localApi.predict(payload);
+        if (out.error) return fail(out.error);
+        show(out);
+        loadHistory();
+        return;
+      }
       const res = await fetch("/api/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: chosen, total_sqft: Number(sqft.value),
-          bhk: Number($("#bhk").value), bath: Number($("#bath").value),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) return fail(data.error || "Something went wrong.");
@@ -144,7 +153,8 @@
   /* ---------- History ---------- */
   async function loadHistory() {
     try {
-      const { items } = await (await fetch("/api/history")).json();
+      const { items } = window.localApi ? window.localApi.history()
+        : await (await fetch("/api/history")).json();
       if (!items.length) return;
       $("#history-body").innerHTML = items.map((r) => `
         <tr><td>${escape(r.location)}</td><td>${Math.round(r.total_sqft).toLocaleString()} sqft</td>
