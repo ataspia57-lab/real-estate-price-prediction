@@ -69,6 +69,25 @@ To use real data, save it as `data/raw/house_data.csv` with these columns: `loca
 | FR-8 continuous prediction | log-target regressor pipeline |
 | FR-9 / FR-10 gates | `src/train.py`, `tests/test_pipeline.py` |
 
+## Budget finder
+
+Enter a budget (in lakh taka), a bedroom count and an optional minimum size. For every area the model prices flats from the smallest valid size up, then shows:
+
+- the biggest flat that fits the budget, and its price
+- what a typical flat of that bedroom count costs there
+- whether a typical flat fits (green), only a smaller one fits (amber), or nothing fits (grey)
+
+You can sort by best areas (highest price per sqft you can still afford) or by biggest flat. API: `POST /api/budget {"budget": 12000000, "bhk": 3, "min_sqft": 1200}`.
+
+## Admin panel
+
+Open `/admin` (password from the `ADMIN_PASSWORD` env var; the demo default is `admin123`). The panel has:
+
+- **Overview:** total estimates, average price, response time, daily usage, most searched areas
+- **Predictions:** full log with a location filter, CSV export and a clear-log action
+- **Model:** comparison table, R²/MAE gates, cleaning report, charts and a **Retrain model** button (reloads the new model without a restart)
+- **Dataset:** rows, missing values, and listings per area
+
 ## API
 
 ```

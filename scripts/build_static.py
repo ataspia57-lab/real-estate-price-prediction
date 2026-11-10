@@ -62,12 +62,14 @@ def main() -> None:
     css = (static / "style.css").read_text()
     js = (static / "app.js").read_text()
     local_api = (static / "local_api.js").read_text()
+    budget_js = (static / "budget.js").read_text()
     model = json.dumps(model_json, separators=(",", ":"))
 
     html = html.replace('<link rel="stylesheet" href="__STATIC__/style.css">', f"<style>\n{css}\n</style>")
     html = html.replace('<script src="__STATIC__/app.js"></script>',
                         f"<script>window.MODEL={model};</script>\n<script>\n{local_api}\n</script>\n"
                         f"<script>\n{js}\n</script>")
+    html = html.replace('<script src="__STATIC__/budget.js"></script>', f"<script>\n{budget_js}\n</script>")
     for fig in (ROOT / "reports" / "figures").glob("*.png"):
         html = html.replace(f'src="/figures/{fig.name}"', f'src="{data_uri(fig)}"')
     html = html.replace('href="/"', 'href="#"').replace(' <a href="/admin/">Admin</a>', '')

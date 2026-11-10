@@ -130,13 +130,44 @@ figcaption { font-size: 13px; color: var(--muted); padding: 8px 4px 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
+/* Budget finder */
+.budget-form { display: grid; grid-template-columns: 1.2fr 1fr 1fr auto; gap: 16px; align-items: start; margin-top: 20px; }
+.budget-form .field { margin: 0; }
+.budget-form .primary { width: auto; padding: 0 26px; height: 48px; margin-top: 27px; }
+.budget-form .error { grid-column: 1 / -1; margin: 0; }
+select { width: 100%; height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; color: var(--ink); background: #fbfbf9; }
+select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+#b-results { margin-top: 24px; scroll-margin-top: 80px; }
+.b-summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.b-summary p { margin: 0; font-size: 17px; max-width: 70ch; }
+.b-sort { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.b-sort button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 14px; font: 500 14px var(--sans); cursor: pointer; color: var(--ink-2); }
+.b-sort button[aria-pressed=true] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.b-legend { display: flex; gap: 18px; font-size: 13px; color: var(--muted); margin: 0 0 12px; flex-wrap: wrap; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+.dot.fits { background: var(--brand); }
+.dot.smaller { background: var(--accent); }
+.dot.over { background: #c9cfcb; }
+.b-table tr.st-over td { color: var(--muted); }
+.b-table tr.st-fits td:first-child { font-weight: 600; }
+#b-results .disclaimer { margin-top: 14px; }
+@media (max-width: 820px) {
+  .budget-form { grid-template-columns: 1fr 1fr; }
+  .budget-form .field:first-child { grid-column: 1 / -1; }
+  .budget-form .primary { grid-column: 1 / -1; width: 100%; margin-top: 0; }
+}
+@media (max-width: 600px) {
+  .b-table th:nth-child(3), .b-table td:nth-child(3), .b-table th:nth-child(5), .b-table td:nth-child(5) { display: none; }
+  .b-table th, .b-table td { padding: 10px 12px; white-space: normal; }
+}
+
 </style>
 </head>
 <body>
   <header class="top">
     <div class="wrap top-inner">
       <a class="brand" href="#"><span class="mark" aria-hidden="true">◆</span> PropValue <small>Dhaka</small></a>
-      <nav><a href="#how">How it works</a><a href="#model">Model</a><a href="#history">Recent</a></nav>
+      <nav><a href="#budget">Budget finder</a><a href="#how">How it works</a><a href="#model">Model</a><a href="#history">Recent</a></nav>
     </div>
   </header>
 
@@ -208,6 +239,67 @@ figcaption { font-size: 13px; color: var(--muted); padding: 8px 4px 0; }
             <p class="disclaimer" id="r-disclaimer"></p>
           </div>
         </section>
+      </div>
+    </section>
+
+    <section id="budget" class="section">
+      <p class="eyebrow">Budget finder</p>
+      <h2>Where can I buy with my budget?</h2>
+      <p class="muted">Enter how much you can spend. We price a flat in every area and show where it fits and how big you can go.</p>
+
+      <form id="budget-form" class="card budget-form" novalidate>
+        <div class="field">
+          <label for="b-amount">Your budget <span class="unit">lakh taka</span></label>
+          <input id="b-amount" type="number" inputmode="decimal" min="1" step="any" placeholder="120" required>
+          <p class="hint" id="b-amount-hint">e.g. 120 lakh = 1.2 crore</p>
+        </div>
+        <div class="field">
+          <label for="b-bhk">Bedrooms</label>
+          <select id="b-bhk">
+            
+              <option value="1" >1 bedroom</option>
+            
+              <option value="2" >2 bedrooms</option>
+            
+              <option value="3" selected>3 bedrooms</option>
+            
+              <option value="4" >4 bedrooms</option>
+            
+              <option value="5" >5 bedrooms</option>
+            
+              <option value="6" >6 bedrooms</option>
+            
+          </select>
+        </div>
+        <div class="field">
+          <label for="b-min">Minimum size <span class="unit">sqft, optional</span></label>
+          <input id="b-min" type="number" inputmode="numeric" min="0" step="50" placeholder="Any">
+        </div>
+        <button class="primary" id="b-submit" type="submit">Find areas</button>
+        <p id="b-error" class="error" role="alert" hidden></p>
+      </form>
+
+      <div id="b-results" hidden aria-live="polite">
+        <div class="b-summary">
+          <p id="b-headline"></p>
+          <div class="b-sort" role="group" aria-label="Sort areas">
+            <span class="muted">Sort:</span>
+            <button type="button" data-sort="premium" aria-pressed="true">Best areas first</button>
+            <button type="button" data-sort="size" aria-pressed="false">Biggest flat first</button>
+          </div>
+        </div>
+        <div class="b-legend">
+          <span><i class="dot fits"></i> Typical flat fits</span>
+          <span><i class="dot smaller"></i> Only a smaller flat fits</span>
+          <span><i class="dot over"></i> Over budget</span>
+        </div>
+        <div class="table-wrap">
+          <table class="b-table">
+            <thead><tr><th>Area</th><th>Biggest flat in budget</th><th>Its price</th><th id="b-typ-head">Typical flat costs</th><th>Price / sqft</th></tr></thead>
+            <tbody id="b-body"></tbody>
+          </table>
+        </div>
+        <p class="disclaimer" id="b-disclaimer"></p>
       </div>
     </section>
 
@@ -357,6 +449,38 @@ figcaption { font-size: 13px; color: var(--muted); padding: 8px 4px 0; }
       return out;
     },
     history() { return { items: hist }; },
+
+    // Mirrors src/budget.py
+    budget({ budget, bhk, min_sqft }) {
+      if (!Number.isFinite(budget) || budget < 1e5) return { error: "Enter your budget in lakh taka, e.g. 120." };
+      if (!Number.isInteger(bhk) || bhk < B.bhk[0] || bhk > B.bhk[1]) return { error: `Bedrooms must be between ${B.bhk[0]} and ${B.bhk[1]}.` };
+      const typical = (n) => Math.round((350 + 420 * n) / 50) * 50;
+      const lo = Math.max(B.total_sqft[0], B.sqft_per_bhk_min * bhk, min_sqft || 0);
+      const hi = Math.min(B.total_sqft[1], Math.trunc(typical(bhk) * 1.75));
+      if (lo > hi) return { error: `No ${bhk}-bedroom size in the data is at least ${Math.round(min_sqft).toLocaleString()} sqft.` };
+      const typ = Math.trunc(Math.min(Math.max(typical(bhk), lo), hi));
+      const bath = bhk <= 2 ? bhk : bhk - 1;
+      const grid = [];
+      for (let s = lo; s <= hi; s += 25) grid.push(s);
+      if (grid[grid.length - 1] !== hi) grid.push(hi);
+      const r3 = (n) => Math.round(n / 1000) * 1000;
+      const price = (loc, s) => raw(M.cats.map((c) => (c === loc ? 1 : 0)).concat([s, bhk, bath]));
+
+      const areas = M.locations.filter((l) => l !== "Other").map((loc) => {
+        const ps = grid.map((s) => price(loc, s));
+        const tp = price(loc, typ);
+        let i = -1;
+        ps.forEach((p, j) => { if (p <= budget) i = j; });
+        const a = { location: loc, typical_price: r3(tp), min_price: r3(ps[0]), price_per_sqft: Math.round(tp / typ),
+                    max_sqft: null, price_at_max: null, status: "over" };
+        if (i >= 0) Object.assign(a, { max_sqft: Math.round(grid[i]), price_at_max: r3(ps[i]), status: tp <= budget ? "fits" : "smaller" });
+        return a;
+      });
+      const counts = { fits: 0, smaller: 0, over: 0 };
+      areas.forEach((a) => counts[a.status]++);
+      return { budget, bhk, bath, typical_sqft: typ, min_sqft: lo, counts, areas,
+               disclaimer: "Estimates from historical data, not listings or a certified appraisal." };
+    },
   };
 })();
 
@@ -527,6 +651,88 @@ figcaption { font-size: 13px; color: var(--muted); padding: 8px 4px 0; }
   }
   const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   loadHistory();
+})();
+
+</script>
+  <script>
+/* Budget finder: where can a buyer afford a flat? (uses /api/budget, or window.localApi in the static build) */
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const form = $("#budget-form");
+  if (!form) return;
+
+  const amount = $("#b-amount"), hint = $("#b-amount-hint"), err = $("#b-error");
+  const btn = $("#b-submit");
+  let data = null, sortBy = "premium";
+
+  const taka = (n) => "৳ " + Math.round(n).toLocaleString("en-IN");
+  const short = (n) => (n >= 1e7 ? `৳${(n / 1e7).toFixed(2)} cr` : `৳${(n / 1e5).toFixed(1)} lakh`);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  amount.addEventListener("input", () => {
+    const v = Number(amount.value);
+    hint.textContent = v > 0 ? `= ${taka(v * 1e5)} (${v >= 100 ? (v / 100).toFixed(2) + " crore" : v + " lakh"})` : "e.g. 120 lakh = 1.2 crore";
+  });
+
+  function fail(msg) { err.textContent = msg; err.hidden = false; amount.setAttribute("aria-invalid", "true"); }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    err.hidden = true; amount.removeAttribute("aria-invalid");
+    const lakh = Number(amount.value);
+    if (!amount.value || !Number.isFinite(lakh) || lakh <= 0) return fail("Enter your budget in lakh taka, e.g. 120.");
+    if (lakh < 5) return fail("That budget is below the cheapest flats in the data. Try at least 20 lakh.");
+    const payload = { budget: lakh * 1e5, bhk: Number($("#b-bhk").value) };
+    const min = Number($("#b-min").value);
+    if ($("#b-min").value && min > 0) payload.min_sqft = min;
+
+    btn.disabled = true; btn.textContent = "Searching…";
+    try {
+      let out;
+      if (window.localApi && window.localApi.budget) out = window.localApi.budget(payload);
+      else {
+        const res = await fetch("/api/budget", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        out = await res.json();
+        if (!res.ok) return fail(out.error || "Something went wrong.");
+      }
+      if (out.error) return fail(out.error);
+      data = out; render();
+    } catch { fail("Could not reach the server. Is it running?"); }
+    finally { btn.disabled = false; btn.textContent = "Find areas"; }
+  });
+
+  document.querySelectorAll(".b-sort button").forEach((b) => b.addEventListener("click", () => {
+    sortBy = b.dataset.sort;
+    document.querySelectorAll(".b-sort button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    if (data) render();
+  }));
+
+  function render() {
+    const { counts, areas, bhk, typical_sqft: typ, budget } = data;
+    const rank = { fits: 0, smaller: 1, over: 2 };
+    const list = [...areas].sort((a, b) =>
+      rank[a.status] - rank[b.status] ||
+      (sortBy === "premium" ? b.price_per_sqft - a.price_per_sqft : (b.max_sqft || 0) - (a.max_sqft || 0)) ||
+      a.min_price - b.min_price);
+
+    const ok = counts.fits + counts.smaller;
+    $("#b-headline").innerHTML = ok
+      ? `With <b>${short(budget)}</b> you can buy a ${bhk}-bed flat in <b>${ok} of ${areas.length}</b> areas. A typical size (~${typ.toLocaleString()} sqft) fits in <b>${counts.fits}</b>.`
+      : `<b>${short(budget)}</b> isn't enough for a ${bhk}-bed flat in any area. The cheapest starts at <b>${short(Math.min(...areas.map((a) => a.min_price)))}</b>. Try fewer bedrooms or a higher budget.`;
+    $("#b-typ-head").textContent = `Typical ${typ.toLocaleString()} sqft costs`;
+
+    $("#b-body").innerHTML = list.map((a) => `
+      <tr class="st-${a.status}">
+        <td><i class="dot ${a.status}" aria-hidden="true"></i>${esc(a.location)}</td>
+        <td>${a.max_sqft ? `<b>${a.max_sqft.toLocaleString()} sqft</b>` : `<span class="muted">needs ${short(a.min_price)}+</span>`}</td>
+        <td>${a.price_at_max ? short(a.price_at_max) : "–"}</td>
+        <td>${short(a.typical_price)}</td>
+        <td>${taka(a.price_per_sqft)}</td>
+      </tr>`).join("");
+    $("#b-disclaimer").textContent = data.disclaimer || "Estimates from historical data, not listings or a certified appraisal.";
+    $("#b-results").hidden = false;
+    $("#b-results").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 })();
 
 </script>

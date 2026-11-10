@@ -149,6 +149,28 @@ def create_app(model=None, meta=None, database_url: str | None = None) -> Flask:
             disclaimer=("Statistical estimate from historical data, not a certified "
                         "legal appraisal."))
 
+    @app.post("/api/budget")
+    def budget():
+        from src.budget import budget_search
+        model, meta = app.config["MODEL"], app.config["META"]
+        p = request.get_json(silent=True) or {}
+        try:
+            amount = _number(p, "budget", integer=False)
+            bhk = _number(p, "bhk", integer=True)
+            min_sqft = _number(p, "min_sqft", integer=False, required=False)
+        except ValidationError as e:
+            return jsonify(error=str(e)), 400
+        if amount < 100_000:
+            return jsonify(error="Budget looks too small. Enter the amount in taka (e.g. 12000000 for 1.2 crore)."), 400
+        lo, hi = meta["bounds"]["bhk"]
+        if not lo <= bhk <= hi:
+            return jsonify(error=f"Bedrooms must be between {lo} and {hi}."), 400
+        out = budget_search(model, meta, amount, bhk, min_sqft)
+        if out.get("error"):
+            return jsonify(error=out["error"]), 400
+        out["disclaimer"] = "Estimates from historical data, not listings or a certified appraisal."
+        return jsonify(out)
+
     @app.get("/figures/<path:name>")
     def figures(name):
         return send_from_directory(ROOT / "reports" / "figures", name)

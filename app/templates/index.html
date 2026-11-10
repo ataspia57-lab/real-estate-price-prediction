@@ -13,7 +13,7 @@
   <header class="top">
     <div class="wrap top-inner">
       <a class="brand" href="/"><span class="mark" aria-hidden="true">◆</span> PropValue <small>Dhaka</small></a>
-      <nav><a href="#how">How it works</a><a href="#model">Model</a><a href="#history">Recent</a></nav>
+      <nav><a href="#budget">Budget finder</a><a href="#how">How it works</a><a href="#model">Model</a><a href="#history">Recent</a></nav>
     </div>
   </header>
 
@@ -88,6 +88,57 @@
       </div>
     </section>
 
+    <section id="budget" class="section">
+      <p class="eyebrow">Budget finder</p>
+      <h2>Where can I buy with my budget?</h2>
+      <p class="muted">Enter how much you can spend. We price a flat in every area and show where it fits and how big you can go.</p>
+
+      <form id="budget-form" class="card budget-form" novalidate>
+        <div class="field">
+          <label for="b-amount">Your budget <span class="unit">lakh taka</span></label>
+          <input id="b-amount" type="number" inputmode="decimal" min="1" step="any" placeholder="120" required>
+          <p class="hint" id="b-amount-hint">e.g. 120 lakh = 1.2 crore</p>
+        </div>
+        <div class="field">
+          <label for="b-bhk">Bedrooms</label>
+          <select id="b-bhk">
+            {% for n in range(meta.bounds.bhk[0], meta.bounds.bhk[1] + 1) %}
+              <option value="{{ n }}" {% if n == 3 %}selected{% endif %}>{{ n }} bedroom{{ '' if n == 1 else 's' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="b-min">Minimum size <span class="unit">sqft, optional</span></label>
+          <input id="b-min" type="number" inputmode="numeric" min="0" step="50" placeholder="Any">
+        </div>
+        <button class="primary" id="b-submit" type="submit">Find areas</button>
+        <p id="b-error" class="error" role="alert" hidden></p>
+      </form>
+
+      <div id="b-results" hidden aria-live="polite">
+        <div class="b-summary">
+          <p id="b-headline"></p>
+          <div class="b-sort" role="group" aria-label="Sort areas">
+            <span class="muted">Sort:</span>
+            <button type="button" data-sort="premium" aria-pressed="true">Best areas first</button>
+            <button type="button" data-sort="size" aria-pressed="false">Biggest flat first</button>
+          </div>
+        </div>
+        <div class="b-legend">
+          <span><i class="dot fits"></i> Typical flat fits</span>
+          <span><i class="dot smaller"></i> Only a smaller flat fits</span>
+          <span><i class="dot over"></i> Over budget</span>
+        </div>
+        <div class="table-wrap">
+          <table class="b-table">
+            <thead><tr><th>Area</th><th>Biggest flat in budget</th><th>Its price</th><th id="b-typ-head">Typical flat costs</th><th>Price / sqft</th></tr></thead>
+            <tbody id="b-body"></tbody>
+          </table>
+        </div>
+        <p class="disclaimer" id="b-disclaimer"></p>
+      </div>
+    </section>
+
     <section id="how" class="section">
       <h2>How it works</h2>
       <ol class="steps">
@@ -140,5 +191,6 @@
 
   <script>window.LOCATIONS = {{ meta.locations|tojson }}; window.BOUNDS = {{ meta.bounds|tojson }};</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='budget.js') }}"></script>
 </body>
 </html>

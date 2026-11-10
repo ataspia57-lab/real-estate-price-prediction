@@ -186,3 +186,27 @@ def test_admin_retrain_rejects_bad_csrf(client):
     r = client.post("/admin/retrain", data={"csrf": "wrong"})
     assert r.status_code == 302
     assert client.get("/admin/retrain/status").get_json()["running"] is False
+
+
+# ---------------------------------------------------------------- budget finder
+def test_budget_finder(client):
+    r = client.post("/api/budget", json={"budget": 12_000_000, "bhk": 3})
+    body = r.get_json()
+    assert r.status_code == 200
+    assert sum(body["counts"].values()) == len(body["areas"]) > 5
+    for a in body["areas"]:
+        if a["status"] != "over":
+            assert a["price_at_max"] <= 12_000_000 and a["max_sqft"] >= 900
+        if a["status"] == "fits":
+            assert a["typical_price"] <= 12_000_000
+
+
+def test_bigger_budget_opens_more_areas(client):
+    small = client.post("/api/budget", json={"budget": 6_000_000, "bhk": 3}).get_json()["counts"]
+    big = client.post("/api/budget", json={"budget": 40_000_000, "bhk": 3}).get_json()["counts"]
+    assert big["over"] <= small["over"] and big["fits"] >= small["fits"]
+
+
+@pytest.mark.parametrize("payload", [{"bhk": 3}, {"budget": 1000, "bhk": 3}, {"budget": 1e7, "bhk": 9}])
+def test_budget_validation(client, payload):
+    assert client.post("/api/budget", json=payload).status_code == 400
