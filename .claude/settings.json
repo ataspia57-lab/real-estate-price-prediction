@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "realestate-capstone-marketplace": {
+      "source": { "source": "directory", "path": "." }
+    }
+  },
+  "enabledPlugins": {
+    "realestate-capstone@realestate-capstone-marketplace": true
+  }
+}

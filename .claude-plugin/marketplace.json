@@ -1,0 +1,11 @@
+{
+  "name": "realestate-capstone-marketplace",
+  "owner": { "name": "Ratul Hasan" },
+  "plugins": [
+    {
+      "name": "realestate-capstone",
+      "source": "./plugin",
+      "description": "All project skills for the Real Estate Price Prediction System."
+    }
+  ]
+}

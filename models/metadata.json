@@ -1,0 +1,139 @@
+{
+  "trained_at": "2026-11-10T17:24:56+00:00",
+  "data_file": "house_data.csv",
+  "currency": "BDT",
+  "best_model": "Gradient Boosting",
+  "gates": {
+    "r2_min": 0.8,
+    "mae_pct_max": 10.0,
+    "r2_passed": true,
+    "mae_passed": true
+  },
+  "results": [
+    {
+      "model": "Linear Regression",
+      "cv_r2": 0.9429,
+      "test_r2": 0.9403,
+      "test_mae_bdt": 1523795,
+      "mae_pct_of_mean": 9.4,
+      "best_params": {
+        "fit_intercept": true
+      },
+      "train_seconds": 1.3
+    },
+    {
+      "model": "Lasso",
+      "cv_r2": 0.9425,
+      "test_r2": 0.9397,
+      "test_mae_bdt": 1549717,
+      "mae_pct_of_mean": 9.56,
+      "best_params": {
+        "alpha": 0.0005
+      },
+      "train_seconds": 0.2
+    },
+    {
+      "model": "Decision Tree",
+      "cv_r2": 0.9599,
+      "test_r2": 0.9599,
+      "test_mae_bdt": 1384659,
+      "mae_pct_of_mean": 8.54,
+      "best_params": {
+        "max_depth": null,
+        "min_samples_leaf": 5
+      },
+      "train_seconds": 1.5
+    },
+    {
+      "model": "Random Forest",
+      "cv_r2": 0.9655,
+      "test_r2": 0.9657,
+      "test_mae_bdt": 1285449,
+      "mae_pct_of_mean": 7.93,
+      "best_params": {
+        "max_depth": null,
+        "min_samples_leaf": 3,
+        "n_estimators": 200
+      },
+      "train_seconds": 117.9
+    },
+    {
+      "model": "Gradient Boosting",
+      "cv_r2": 0.9688,
+      "test_r2": 0.9681,
+      "test_mae_bdt": 1232983,
+      "mae_pct_of_mean": 7.61,
+      "best_params": {
+        "learning_rate": 0.1,
+        "max_depth": 3,
+        "n_estimators": 300
+      },
+      "train_seconds": 20.2
+    }
+  ],
+  "cleaning": {
+    "raw_rows": 12000,
+    "after_basic_clean": 11801,
+    "locations_kept": 39,
+    "after_iqr": 11554,
+    "rows_removed": 446
+  },
+  "locations": [
+    "Aftabnagar",
+    "Agargaon",
+    "Badda",
+    "Banani",
+    "Banasree",
+    "Baridhara",
+    "Basabo",
+    "Bashundhara R/A",
+    "Bhashantek",
+    "Demra",
+    "Dhanmondi",
+    "Eskaton",
+    "Gulshan",
+    "Jatrabari",
+    "Kafrul",
+    "Kalabagan",
+    "Kallyanpur",
+    "Keraniganj",
+    "Khilgaon",
+    "Kuril",
+    "Lalbagh",
+    "Lalmatia",
+    "Malibagh",
+    "Mirpur",
+    "Mohakhali",
+    "Mohammadpur",
+    "Motijheel",
+    "Niketan",
+    "Pallabi",
+    "Purbachal",
+    "Rampura",
+    "Savar",
+    "Shahjahanpur",
+    "Shyamoli",
+    "Sutrapur",
+    "Tejgaon",
+    "Tongi",
+    "Uttara",
+    "Wari",
+    "Other"
+  ],
+  "bounds": {
+    "total_sqft": [
+      350.0,
+      4026.0
+    ],
+    "bhk": [
+      1,
+      6
+    ],
+    "bath": [
+      1,
+      7
+    ],
+    "sqft_per_bhk_min": 300
+  },
+  "median_bath": 3.0
+}

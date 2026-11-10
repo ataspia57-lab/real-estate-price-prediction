@@ -1,0 +1,7 @@
+{
+  "name": "realestate-capstone",
+  "version": "1.0.0",
+  "description": "Skills for the SE331 Real Estate Price Prediction System: project workflows (train, run, dataset swap, capstone report) plus a full bundle of design, data, frontend, document and productivity skills.",
+  "author": { "name": "Ratul Hasan" },
+  "keywords": ["real-estate", "machine-learning", "flask", "capstone", "skills"]
+}
